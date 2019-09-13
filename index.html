@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta
+      name="viewport"
+      content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
+    />
+  </head>
+  <script src="https://aframe.io/releases/0.9.2/aframe.min.js"></script>
+  <script src="https://raw.githack.com/jeromeetienne/AR.js/master/aframe/build/aframe-ar.min.js"></script>
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.5.8/lottie.min.js" type="text/javascript"></script>
+
+  <body style="margin : 0px; overflow: hidden;">
+    <!-- we add detectionMode and matrixCodeType to tell AR.js to recognize barcode markers -->
+    <a-scene
+      embedded
+      arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+      vr-mode-ui="enabled: false"
+    >
+      <a-assets>
+        <img id="water" src="water.png"></img>
+        <img id="tail" src="tail.png"></img>
+        <img id="ground" src="plane.jpg">
+      </a-assets>
+
+      <a-marker id="marker" type="pattern" preset="custom" url="tenticle.patt">
+              
+        <a-entity rotation="180 0 180" position="0 0 0">
+
+            <a-ocean color="#92E2E2" width="6" depth="6" density="3" speed="1" opacity="0"></a-ocean>
+
+            <a-image 
+            src="#water" 
+            width="6" 
+            rotation="0 180 0" 
+            height="6" 
+            position="0 3 -3" material="alphaTest: 0.5">
+          </a-image>
+
+          <a-image 
+              src="#water"
+              width="6" 
+              height="6"
+              rotation="0 180 0" 
+              position="0 3.1 -0.5"
+              material="alphaTest: 0.5"
+              >
+          </a-image>            
+          
+          <a-image 
+                src="#tail" 
+                position="0 -2 -1.5" 
+                rotation="0 180 0" 
+                width="2" 
+                height="5"
+                opacity="0"
+                material="alphaTest: 0.5"
+                animation="property: position; from: 0 -2 0; to: 0 2 0; dur: 5000; delay: 2000"
+                animation__2="property: rotation; from: 0 180 0; to: 0 180 12; dur: 5000; delay: 3000; dir: alternate; loop: true;"
+                animation__3="property: opacity; from: 0; to: 1; dur: 3000; delay: 2000; loop: false;"
+                >
+            </a-image>
+
+        </a-entity>
+        
+    </a-marker>
+
+      <a-entity camera></a-entity>
+    </a-scene>
+
+    <script>
+
+     let marker = document.getElementById("marker");
+
+
+      AFRAME.registerPrimitive('a-ocean', {
+        defaultComponents: {
+            ocean: {},
+            rotation: {
+                x: 80,
+                y: 0,
+                z: 0
+            }
+        },
+        mappings: {
+            width: 'ocean.width',
+            depth: 'ocean.depth',
+            density: 'ocean.density',
+            amplitude: 'ocean.amplitude',
+            amplitudeVariance: 'ocean.amplitudeVariance',
+            speed: 'ocean.speed',
+            speedVariance: 'ocean.speedVariance',
+            color: 'ocean.color',
+            opacity: 'ocean.opacity'
+        }
+    });
+
+    AFRAME.registerComponent('ocean', {
+        schema: {
+            // Dimensions of the ocean area.
+            width: {
+                default: 10,
+                min: 0
+            },
+            depth: {
+                default: 10,
+                min: 0
+            },
+
+            // Density of waves.
+            density: {
+                default: 10
+            },
+
+            // Wave amplitude and variance.
+            amplitude: {
+                default: 0.1
+            },
+            amplitudeVariance: {
+                default: 0.3
+            },
+
+            // Wave speed and variance.
+            speed: {
+                default: 1
+            },
+            speedVariance: {
+                default: 2
+            },
+
+            // Material.
+            color: {
+                default: '#7AD2F7',
+                type: 'color'
+            },
+            opacity: {
+                default: 0.8
+            }
+        },
+
+        /**
+        * Use play() instead of init(), because component mappings – unavailable as dependencies – are
+        * not guaranteed to have parsed when this component is initialized.
+        */
+        play: function() {
+            const el = this.el,
+                data = this.data;
+            let material = el.components.material;
+
+            const geometry = new THREE.PlaneGeometry(data.width, data.depth, data.density, data.density);
+            geometry.mergeVertices();
+            this.waves = [];
+            for (let v, i = 0, l = geometry.vertices.length; i < l; i++) {
+                v = geometry.vertices[i];
+                this.waves.push({
+                    z: v.z,
+                    ang: Math.random() * Math.PI * 2,
+                    amp: data.amplitude + Math.random() * data.amplitudeVariance,
+                    speed: (data.speed + Math.random() * data.speedVariance) / 1000 // radians / frame
+                });
+            }
+
+            let loader = new THREE.TextureLoader();
+            let map = loader.load('plane.jpg');
+
+            if (!material) {
+                material = {};
+                material.material = new THREE.MeshPhongMaterial({
+                    color: data.color,
+                    transparent: data.opacity < 1,
+                    opacity: data.opacity,
+                    shading: THREE.FlatShading,
+                    side: THREE.DoubleSide,
+                    specular: 0x555555,
+                    shininess: 30,
+                    map: map
+                });
+            }
+
+            this.mesh = new THREE.Mesh(geometry, material.material);
+            el.setObject3D('mesh', this.mesh);
+        },
+
+        remove: function() {
+            this.el.removeObject3D('mesh');
+        },
+
+        tick: function(t, dt) {
+            if (!dt) return;
+
+            const verts = this.mesh.geometry.vertices;
+            for (let v, vprops, i = 0;
+                (v = verts[i]); i++) {
+                vprops = this.waves[i];
+                v.z = vprops.z + Math.sin(vprops.ang) * vprops.amp;
+                vprops.ang += vprops.speed * dt;
+            }
+            this.mesh.geometry.verticesNeedUpdate = true;
+        }
+    });
+
+    </script>
+  </body>
+</html>
+
