@@ -6,10 +6,8 @@
       content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
     />
   </head>
-  <script src="https://aframe.io/releases/0.9.2/aframe.min.js"></script>
-  <script src="https://raw.githack.com/jeromeetienne/AR.js/master/aframe/build/aframe-ar.min.js"></script>
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.5.8/lottie.min.js" type="text/javascript"></script>
+  <script src="aframe.min.js"></script>
+  <script src="ar.min.js"></script>
 
   <body style="margin : 0px; overflow: hidden;">
     <!-- we add detectionMode and matrixCodeType to tell AR.js to recognize barcode markers -->
@@ -21,16 +19,16 @@
       <a-assets>
         <img id="water" src="water.png"></img>
         <img id="tail" src="tail.png"></img>
-        <img id="ground" src="plane.jpg">
+        <img id="ground" src="waves.png">
       </a-assets>
 
       <a-marker id="marker" type="pattern" preset="custom" url="tenticle.patt">
-              
+        <a-cylinder src="#ground" material="alphaTest: 0.5" height="1.5" radius="1" open-ended="true" rotation="0 0 0" side="double"></a-cylinder>      
         <a-entity rotation="180 0 180" position="0 0 0">
 
-            <a-ocean color="#92E2E2" width="6" depth="6" density="3" speed="1" opacity="1"></a-ocean>
+            <a-ocean color="#92E2E2" position="0 -0.5 0" density="0.1" amplitude="" speed="0.1" opacity="1"></a-ocean>
 
-            <a-image 
+            <!-- <a-image 
             src="#water" 
             width="6" 
             rotation="0 180 0" 
@@ -46,17 +44,17 @@
               position="0 3.1 -0.5"
               material="alphaTest: 0.5"
               >
-          </a-image>            
+          </a-image>             -->
           
           <a-image 
                 src="#tail" 
-                position="0 -2 -1.5" 
+                position="0 -1.8 -1.5" 
                 rotation="0 180 0" 
-                width="2" 
-                height="5"
+                width="1" 
+                height="3"
                 opacity="0"
                 material="alphaTest: 0.5"
-                animation="property: position; from: 0 -2 0; to: 0 2 0; dur: 5000; delay: 2000"
+                animation="property: position; from: 0 -1.8 0; to: 0 0.6 0; dur: 5000; delay: 2000"
                 animation__2="property: rotation; from: 0 180 0; to: 0 180 12; dur: 5000; delay: 3000; dir: alternate; loop: true;"
                 animation__3="property: opacity; from: 0; to: 1; dur: 3000; delay: 2000; loop: false;"
                 >
@@ -148,7 +146,8 @@
                 data = this.data;
             let material = el.components.material;
 
-            const geometry = new THREE.PlaneGeometry(data.width, data.depth, data.density, data.density);
+            // const geometry = new THREE.PlaneGeometry(data.width, data.depth, data.density, data.density);
+            const geometry = new THREE.CircleGeometry(0.98, 20);
             geometry.mergeVertices();
             this.waves = [];
             for (let v, i = 0, l = geometry.vertices.length; i < l; i++) {
@@ -173,7 +172,8 @@
                     shading: THREE.FlatShading,
                     side: THREE.DoubleSide,
                     specular: 0x555555,
-                    shininess: 30,
+                    shininess: 20,
+                    alphaTest: 0.5,
                     map: map
                 });
             }
